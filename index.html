@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#12151b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dispatch">
+<meta name="application-name" content="Dispatch">
+<link rel="manifest" id="manifestLink">
+<title>Dispatch — live briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12151b;
+    --surface: #1b2028;
+    --surface-hi: #232a34;
+    --line: #2a313c;
+    --text: #edeae2;
+    --text-dim: #8b92a0;
+    --accent: #e3b23c;
+    --red: #d9564c;
+    --green: #4c9a63;
+    --amber: #e3b23c;
+
+    --c-geo: #c0524a;
+    --c-pol: #7a8699;
+    --c-ai: #4e6e8e;
+    --c-tech: #3e8e7e;
+    --c-innov: #a67c3d;
+    --c-markets: #4c9a63;
+    --c-tn: #b0538e;
+    --c-auto: #6b7d4f;
+    --c-llm: #7860b0;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; overscroll-behavior-y: contain; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  a { color: inherit; }
+
+  .wrap{ max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top{
+    display:flex; justify-content: space-between; align-items: flex-end;
+    gap: 20px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px; margin-bottom: 18px;
+  }
+  header.top .brand{
+    font-size: 0.8rem; color: var(--text-dim); margin: 0 0 6px 0;
+  }
+  header.top h1{
+    font-family:"Source Serif 4", serif;
+    font-weight: 700;
+    font-size: 2.1rem;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  header.top p.sub{
+    margin:0; color: var(--text-dim); font-size: 0.92rem; max-width: 46ch;
+  }
+  .top-controls{ display:flex; align-items:center; gap:14px; flex-wrap: wrap; }
+  .top-controls .updated{ font-size: 0.78rem; color: var(--text-dim); text-align:right; }
+  button.refresh{
+    background: var(--surface-hi); color: var(--text); border: 1px solid var(--line);
+    padding: 9px 16px; border-radius: 7px; font-family: inherit; font-size: 0.88rem;
+    cursor: pointer; transition: border-color .15s ease, transform .1s ease;
+  }
+  button.refresh:hover{ border-color: var(--accent); }
+  button.refresh:active{ transform: scale(0.97); }
+  button.refresh:disabled{ opacity: 0.5; cursor: default; }
+
+  label.auto{ display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-dim); cursor:pointer; }
+  label.auto input{ accent-color: var(--accent); }
+
+  nav.tabs{
+    display:flex; gap: 4px; overflow-x:auto; margin-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button{
+    background:none; border:none; color: var(--text-dim); font-family: inherit;
+    font-size: 0.94rem; padding: 10px 14px; cursor:pointer; white-space:nowrap;
+    border-bottom: 2px solid transparent; margin-bottom:-1px;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  nav.tabs button:hover{ color: var(--text); }
+  nav.tabs button.active{ color: var(--text); font-weight: 500; }
+
+  .status-strip{
+    display:flex; gap: 16px; flex-wrap:wrap; align-items:center;
+    font-size: 0.76rem; color: var(--text-dim);
+    padding: 8px 0 16px 0;
+  }
+  .status-strip .dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    margin-right: 5px; background: var(--text-dim);
+  }
+  .status-strip .item{ display:flex; align-items:center; cursor:pointer; }
+  .status-detail{
+    font-size: 0.76rem; color: var(--text); background: var(--surface-hi);
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+    margin: -8px 0 14px 0;
+  }
+
+  .diag{
+    font-size: 0.8rem; padding: 4px 4px 12px; border-radius: 7px; margin-bottom: 16px;
+    border: 1px solid var(--line); background: var(--surface); display: none;
+  }
+  .diag-title{ padding: 10px 14px 4px; color: var(--text); font-weight: 500; }
+  .diag-row{
+    display: flex; align-items: center; gap: 8px; padding: 5px 14px; color: var(--text-dim);
+  }
+  .diag-row .dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+  .diag-row .dot.ok{ background: var(--green); }
+  .diag-row .dot.fail{ background: var(--red); }
+  .diag-row .dot.pending{ background: var(--amber); animation: pulse 1.2s infinite ease-in-out; }
+  .diag-row.fail{ color: var(--text); }
+  .dot.ok{ background: var(--green); }
+  .dot.fail{ background: var(--red); }
+  .dot.pending{ background: var(--amber); animation: pulse 1.2s infinite ease-in-out; }
+  @keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:0.35;} }
+
+  .tickers{
+    display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px;
+  }
+  .ticker{
+    background: var(--surface); border:1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px; min-width: 110px;
+  }
+  .ticker .name{ font-size: 0.72rem; color: var(--text-dim); margin-bottom: 3px; }
+  .ticker .price{ font-family:"Source Serif 4", serif; font-size: 1.15rem; }
+  .ticker .delta{ font-size: 0.76rem; margin-top:2px; }
+  .ticker .delta.up{ color: var(--green); }
+  .ticker .delta.down{ color: var(--red); }
+
+  main#feed{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr));
+    gap: 14px;
+  }
+  .card{
+    background: var(--surface); border:1px solid var(--line); border-left-width: 3px;
+    border-radius: 8px; padding: 14px 16px;
+    opacity: 0; transform: translateY(6px);
+    animation: rise .35s ease forwards;
+  }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+  .card .meta{
+    display:flex; justify-content:space-between; font-size: 0.72rem;
+    color: var(--text-dim); margin-bottom: 7px;
+  }
+  .card h3{
+    font-family:"Source Serif 4", serif; font-weight:600; font-size: 1.05rem;
+    line-height:1.3; margin: 0 0 6px 0;
+  }
+  .card h3 a{ text-decoration:none; }
+  .card h3 a:hover{ text-decoration:underline; text-decoration-color: var(--accent); }
+  .card p.snippet{
+    font-size: 0.85rem; color: var(--text-dim); line-height:1.45; margin:0;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+  }
+
+  .empty{
+    grid-column: 1 / -1; padding: 40px 20px; text-align:center; color: var(--text-dim);
+    border: 1px dashed var(--line); border-radius: 8px;
+  }
+  .empty .links{ margin-top: 14px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .empty .links a{ color: var(--accent); font-size: 0.85rem; text-decoration:none; }
+  .empty .links a:hover{ text-decoration:underline; }
+
+  footer.note{
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 0.76rem; color: var(--text-dim); line-height:1.6;
+  }
+  footer.note code{ background: var(--surface-hi); padding: 1px 5px; border-radius:4px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .card{ animation: none; opacity:1; transform:none; }
+    .dot.pending{ animation:none; }
+  }
+
+  .pull-indicator{
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    text-align: center; padding: 12px; font-size: 0.78rem; color: var(--text-dim);
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    transform: translateY(-100%); opacity: 0;
+    transition: transform .15s ease, opacity .15s ease;
+    pointer-events: none;
+  }
+
+  /* Mobile: single column, stacked header, bigger tap targets, no horizontal overflow */
+  @media (max-width: 640px){
+    .wrap{ padding: 20px 14px 60px; }
+    header.top{ flex-direction: column; align-items: stretch; gap: 14px; }
+    header.top h1{ font-size: 1.6rem; }
+    header.top p.sub{ max-width: none; }
+    .top-controls{ justify-content: space-between; width: 100%; }
+    .top-controls .updated{ text-align: left; }
+    button.refresh{ padding: 10px 16px; }
+    nav.tabs{ -webkit-overflow-scrolling: touch; }
+    nav.tabs button{ padding: 12px 12px; font-size: 0.9rem; }
+    main#feed{ grid-template-columns: 1fr; }
+    .ticker{ min-width: 96px; padding: 9px 12px; }
+    .card{ padding: 13px 14px; }
+  }
+</style>
+</head>
+<body>
+<div id="pullIndicator" class="pull-indicator">Pull to refresh</div>
+<div class="wrap">
+
+  <div id="diagPanel" class="diag"></div>
+
+  <header class="top">
+    <div>
+      <p class="brand">Dispatch</p>
+      <h1 id="greeting">Good day, Hari</h1>
+    </div>
+    <div class="top-controls">
+      <label class="auto"><input type="checkbox" id="autoRefresh"> auto-refresh every 10 min</label>
+      <button class="refresh" id="refreshBtn">Refresh</button>
+      <div class="updated" id="updatedAt">not loaded yet</div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div class="status-strip" id="statusStrip"></div>
+  <div class="status-detail" id="statusDetail" style="display:none;"></div>
+  <div class="tickers" id="tickers" style="display:none;"></div>
+
+  <main id="feed"></main>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Config: edit this to change what gets pulled ----------
+  // OWN_PROXY_URL: paste the full URL of your deployed proxy function here once it's live —
+  // e.g. "https://dispatch-proxy.vercel.app/api/proxy" (see the dispatch-proxy.zip project:
+  // `npx vercel --prod` deploys it in about a minute, no git needed).
+  // Public proxies alone were confirmed dead on 2026-09-06 (corsproxy.io now returns 401 —
+  // it started requiring auth; allorigins.win and codetabs.com both timed out). They're kept
+  // below as a last-ditch fallback in case they come back, but don't rely on them.
+  const OWN_PROXY_URL = "https://newsapp-fawn-psi.vercel.app/api/proxy"; // e.g. "https://dispatch-proxy.vercel.app/api/proxy"
+  const PROXY_CONFIGS = [
+    ...(OWN_PROXY_URL ? [{
+      label: "your proxy",
+      build: u => OWN_PROXY_URL + (OWN_PROXY_URL.includes("?") ? "&" : "?") + "url=" + encodeURIComponent(u)
+    }] : []),
+    { label: "allorigins.win", build: u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u) },
+    { label: "codetabs.com", build: u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u) }
+  ];
+  const PROXY_BUILDERS = PROXY_CONFIGS.map(p => p.build);
+  const CACHE_TTL_MS = 5 * 60 * 1000;
+
+  const CATEGORIES = {
+    geopolitics: {
+      label: "Geopolitics", color: "var(--c-geo)",
+      sources: [
+        { type: "reddit", sub: "geopolitics", name: "r/geopolitics" },
+        { type: "reddit", sub: "worldnews", name: "r/worldnews" },
+        { type: "rss", url: "http://feeds.bbci.co.uk/news/world/rss.xml", name: "BBC World" },
+        { type: "rss", url: "https://www.aljazeera.com/xml/rss/all.xml", name: "Al Jazeera" }
+      ]
+    },
+    politics: {
+      label: "Politics", color: "var(--c-pol)",
+      sources: [
+        { type: "reddit", sub: "politics", name: "r/politics" },
+        { type: "reddit", sub: "PoliticalDiscussion", name: "r/PoliticalDiscussion" },
+        { type: "rss", url: "http://feeds.bbci.co.uk/news/politics/rss.xml", name: "BBC Politics" },
+        { type: "rss", url: "https://feeds.npr.org/1014/rss.xml", name: "NPR Politics" }
+      ]
+    },
+    ai: {
+      label: "AI", color: "var(--c-ai)",
+      sources: [
+        { type: "hn", query: "AI", name: "Hacker News · AI" },
+        { type: "reddit", sub: "artificial", name: "r/artificial" },
+        { type: "reddit", sub: "MachineLearning", name: "r/MachineLearning" }
+      ]
+    },
+    llm: {
+      label: "LLM", color: "var(--c-llm)",
+      sources: [
+        { type: "hn", query: "LLM OR \"large language model\"", name: "Hacker News · LLM" },
+        { type: "reddit", sub: "LocalLLaMA", name: "r/LocalLLaMA" },
+        { type: "reddit", sub: "ClaudeAI", name: "r/ClaudeAI" }
+      ]
+    },
+    tech: {
+      label: "Tech", color: "var(--c-tech)",
+      sources: [
+        { type: "hn_front", name: "Hacker News · front page" },
+        { type: "reddit", sub: "technology", name: "r/technology" },
+        { type: "rss", url: "https://feeds.arstechnica.com/arstechnica/index", name: "Ars Technica" }
+      ]
+    },
+    innovation: {
+      label: "Innovation", color: "var(--c-innov)",
+      sources: [
+        { type: "reddit", sub: "Futurology", name: "r/Futurology" },
+        { type: "hn", query: "innovation OR breakthrough OR research", name: "Hacker News · R&D" },
+        { type: "rss", url: "https://spectrum.ieee.org/feeds/feed.rss", name: "IEEE Spectrum" }
+      ]
+    },
+    markets: {
+      label: "Markets", color: "var(--c-markets)",
+      tickers: [
+        { symbol: "^spx", label: "S&P 500" },
+        { symbol: "^ndq", label: "Nasdaq" },
+        { symbol: "^dji", label: "Dow" },
+        { symbol: "^nsei", label: "Nifty 50" },
+        { symbol: "^bsesn", label: "Sensex" }
+      ],
+      sources: [
+        { type: "reddit", sub: "stocks", name: "r/stocks" },
+        { type: "reddit", sub: "StockMarket", name: "r/StockMarket" },
+        { type: "rss", url: "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", name: "Economic Times Markets" }
+      ]
+    },
+    tamilnadu: {
+      label: "Tamil Nadu", color: "var(--c-tn)",
+      sources: [
+        { type: "reddit", sub: "TamilNadu", name: "r/TamilNadu" },
+        { type: "reddit_search", sub: "india", query: "Tamil Nadu politics", name: "r/india search" },
+        { type: "rss", url: "https://www.thehindu.com/news/national/tamil-nadu/feeder/", name: "The Hindu · Tamil Nadu" }
+      ]
+    },
+    auto: {
+      label: "Bikes & Cars", color: "var(--c-auto)",
+      sources: [
+        { type: "reddit", sub: "motorcycles", name: "r/motorcycles" },
+        { type: "reddit", sub: "Cars", name: "r/Cars" },
+        { type: "reddit", sub: "IndianBikes", name: "r/IndianBikes" },
+        { type: "rss", url: "https://www.motorbeam.com/feed/", name: "MotorBeam" }
+      ]
+    }
+  };
+
+  // ---------- State ----------
+  let activeCategory = "geopolitics";
+  const cache = {};          // key -> { items, ts }
+  const sourceStatus = {};   // sourceLabel -> { state: 'ok'|'fail'|'pending', detail?: string }
+  function setStatus(name, state, detail){
+    sourceStatus[name] = { state, detail: detail || "" };
+    renderStatus();
+  }
+  let autoTimer = null;
+
+  // Not used by default in this preview environment — see footer note.
+  function saveState(){
+    // localStorage.setItem('dispatch_last_tab', activeCategory);
+  }
+  function loadState(){
+    // const saved = localStorage.getItem('dispatch_last_tab');
+    // if (saved && CATEGORIES[saved]) activeCategory = saved;
+  }
+
+  // ---------- Fetch helpers ----------
+  function fetchWithTimeout(url, ms){
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms || 8000);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+  }
+
+  function describeError(e){
+    if (e && e.name === "AbortError") return "timed out";
+    if (e instanceof TypeError) return "blocked before a response came back (CORS or network policy) — " + e.message;
+    return (e && e.message) ? e.message : String(e);
+  }
+
+  // Tries a direct fetch first (fastest, works when the source allows it), then falls
+  // through the proxy list. Returns the first successful Response, or throws the last error.
+  async function fetchDirectOrProxied(targetUrl, ms, tryDirectFirst){
+    const attempts = tryDirectFirst
+      ? [targetUrl, ...PROXY_BUILDERS.map(b => b(targetUrl))]
+      : PROXY_BUILDERS.map(b => b(targetUrl));
+    let lastErr = new Error("no attempts configured");
+    for (const url of attempts){
+      try{
+        const res = await fetchWithTimeout(url, ms);
+        if (!res.ok) { lastErr = new Error("HTTP " + res.status); continue; }
+        return res;
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr;
+  }
+
+  async function fetchHN(query, name){
+    setStatus(name, "pending");
+    try{
+      const url = "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=8&query=" + encodeURIComponent(query);
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      setStatus(name, "ok");
+      return (data.hits || []).map(h => ({
+        title: h.title || h.story_title || "(untitled)",
+        url: h.url || ("https://news.ycombinator.com/item?id=" + h.objectID),
+        source: name,
+        time: h.created_at ? new Date(h.created_at) : new Date(),
+        snippet: (h.points != null ? h.points + " points, " : "") + (h.num_comments != null ? h.num_comments + " comments" : "")
+      }));
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  async function fetchHNFront(name){
+    setStatus(name, "pending");
+    try{
+      const url = "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=10";
+      const res = await fetchWithTimeout(url, 8000);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      setStatus(name, "ok");
+      return (data.hits || []).map(h => ({
+        title: h.title || "(untitled)",
+        url: h.url || ("https://news.ycombinator.com/item?id=" + h.objectID),
+        source: name,
+        time: h.created_at ? new Date(h.created_at) : new Date(),
+        snippet: (h.points != null ? h.points + " points, " : "") + (h.num_comments != null ? h.num_comments + " comments" : "")
+      }));
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  async function fetchReddit(sub, name){
+    setStatus(name, "pending");
+    try{
+      const target = "https://www.reddit.com/r/" + sub + "/.json?limit=8";
+      // Confirmed 2026-09-06: Reddit's .json endpoint does not answer direct cross-origin
+      // requests. Going straight to the proxy chain instead of wasting a guaranteed-fail attempt.
+      const res = await fetchDirectOrProxied(target, 8000, false);
+      const data = await res.json();
+      setStatus(name, "ok");
+      return (data.data.children || []).map(c => ({
+        title: c.data.title,
+        url: c.data.url_overridden_by_dest || ("https://reddit.com" + c.data.permalink),
+        source: name,
+        time: new Date(c.data.created_utc * 1000),
+        snippet: (c.data.score != null ? c.data.score + " upvotes" : "")
+      }));
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  async function fetchRedditSearch(sub, query, name){
+    setStatus(name, "pending");
+    try{
+      const target = "https://www.reddit.com/r/" + sub + "/search.json?q=" +
+        encodeURIComponent(query) + "&restrict_sr=1&sort=new&limit=8";
+      const res = await fetchDirectOrProxied(target, 8000, false);
+      const data = await res.json();
+      setStatus(name, "ok");
+      return (data.data.children || []).map(c => ({
+        title: c.data.title,
+        url: c.data.url_overridden_by_dest || ("https://reddit.com" + c.data.permalink),
+        source: name,
+        time: new Date(c.data.created_utc * 1000),
+        snippet: (c.data.score != null ? c.data.score + " upvotes" : "")
+      }));
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  async function fetchRSS(feedUrl, name){
+    setStatus(name, "pending");
+    try{
+      const res = await fetchDirectOrProxied(feedUrl, 9000, false); // these feeds never allow direct
+      const text = await res.text();
+      const xml = new DOMParser().parseFromString(text, "text/xml");
+      if (xml.querySelector("parsererror")) throw new Error("feed returned invalid XML");
+      const items = Array.from(xml.querySelectorAll("item")).slice(0, 8);
+      setStatus(name, "ok");
+      return items.map(it => {
+        const title = it.querySelector("title") ? it.querySelector("title").textContent : "(untitled)";
+        const link = it.querySelector("link") ? it.querySelector("link").textContent : feedUrl;
+        const pub = it.querySelector("pubDate") ? new Date(it.querySelector("pubDate").textContent) : new Date();
+        const descRaw = it.querySelector("description") ? it.querySelector("description").textContent : "";
+        const snippet = descRaw.replace(/<[^>]+>/g, "").slice(0, 160);
+        return { title, url: link, source: name, time: isNaN(pub) ? new Date() : pub, snippet };
+      });
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  async function fetchTickers(tickers){
+    const name = "Stooq";
+    setStatus(name, "pending");
+    try{
+      const symbols = tickers.map(t => t.symbol).join(",");
+      const stooqUrl = "https://stooq.com/q/l/?s=" + encodeURIComponent(symbols) + "&f=sd2t2ohlcv&h&e=csv";
+      const res = await fetchDirectOrProxied(stooqUrl, 9000, false);
+      const text = await res.text();
+      const lines = text.trim().split("\n").slice(1); // drop header row
+      setStatus(name, "ok");
+      return lines.map(line => {
+        const parts = line.split(",");
+        const symbol = (parts[0] || "").replace(/"/g, "");
+        const close = parseFloat(parts[6]);
+        const open = parseFloat(parts[3]);
+        const match = tickers.find(t => t.symbol.toUpperCase() === symbol.toUpperCase());
+        return {
+          symbol, label: match ? match.label : symbol,
+          price: isNaN(close) ? null : close,
+          deltaPct: (!isNaN(close) && !isNaN(open) && open !== 0) ? ((close - open) / open) * 100 : null
+        };
+      });
+    }catch(e){
+      setStatus(name, "fail", describeError(e));
+      return [];
+    }
+  }
+
+  // ---------- Rendering ----------
+  function renderTabs(){
+    const nav = document.getElementById("tabs");
+    nav.innerHTML = "";
+    Object.keys(CATEGORIES).forEach(key => {
+      const btn = document.createElement("button");
+      btn.textContent = CATEGORIES[key].label;
+      btn.className = key === activeCategory ? "active" : "";
+      btn.style.borderColor = key === activeCategory ? CATEGORIES[key].color : "transparent";
+      btn.addEventListener("click", () => switchCategory(key));
+      nav.appendChild(btn);
+    });
+  }
+
+  let statusClickBound = false;
+  function renderStatus(){
+    const strip = document.getElementById("statusStrip");
+    const cat = CATEGORIES[activeCategory];
+    const relevantNames = (cat.sources || []).map(s => s.name).concat(cat.tickers ? ["Stooq"] : []);
+    strip.innerHTML = relevantNames.map(name => {
+      const entry = sourceStatus[name] || { state: "pending", detail: "" };
+      const safeName = name.replace(/"/g, "&quot;");
+      const safeDetail = (entry.detail || "").replace(/"/g, "&quot;");
+      const title = entry.detail ? (name + ": " + entry.detail).replace(/"/g, "&quot;") : name;
+      // title=hover works on desktop; data-* + click below covers touch, where hover never fires.
+      return '<span class="item" title="' + title + '" data-name="' + safeName + '" data-detail="' + safeDetail + '">' +
+             '<span class="dot ' + entry.state + '"></span>' + name + '</span>';
+    }).join("");
+
+    if (!statusClickBound){
+      strip.addEventListener("click", (e) => {
+        const item = e.target.closest(".item");
+        if (!item) return;
+        const detailBox = document.getElementById("statusDetail");
+        const detail = item.getAttribute("data-detail");
+        if (!detail){ detailBox.style.display = "none"; return; }
+        detailBox.textContent = item.getAttribute("data-name") + ": " + detail;
+        detailBox.style.display = "block";
+      });
+      statusClickBound = true;
+    }
+
+    // If every source in this tab has finished and all failed, that's an environment
+    // signal, not six unrelated outages — say so instead of leaving it to guesswork.
+    const finished = relevantNames.map(n => sourceStatus[n]).filter(Boolean);
+    const allDone = finished.length === relevantNames.length && finished.every(s => s.state !== "pending");
+    const allFailed = allDone && finished.length > 0 && finished.every(s => s.state === "fail");
+    const banner = document.getElementById("envBanner");
+    if (allFailed){
+      if (!banner){
+        const div = document.createElement("div");
+        div.id = "envBanner";
+        div.style.cssText = "grid-column:1/-1;background:var(--surface);border:1px solid var(--red);border-radius:8px;padding:12px 16px;font-size:0.82rem;color:var(--text-dim);margin-bottom:14px;";
+        div.textContent = "Every source on this tab failed at once, across different fetch methods — that pattern usually means the page is being viewed inside a sandboxed preview that blocks outbound requests, not that all these sources are actually down. Hover a dot above for the real error. Try opening this file directly in a browser (double-click the download, or host it) rather than relying on an embedded preview.";
+        document.getElementById("feed").before(div);
+      }
+    } else if (banner){
+      banner.remove();
+    }
+  }
+
+  function renderTickers(items){
+    const wrap = document.getElementById("tickers");
+    if (!items || !items.length){ wrap.style.display = "none"; return; }
+    wrap.style.display = "flex";
+    wrap.innerHTML = items.map(t => {
+      const priceStr = t.price != null ? t.price.toLocaleString(undefined, {maximumFractionDigits: 2}) : "—";
+      const deltaStr = t.deltaPct != null ? (t.deltaPct >= 0 ? "+" : "") + t.deltaPct.toFixed(2) + "%" : "n/a";
+      const deltaClass = t.deltaPct == null ? "" : (t.deltaPct >= 0 ? "up" : "down");
+      return '<div class="ticker"><div class="name">' + t.label + '</div>' +
+             '<div class="price">' + priceStr + '</div>' +
+             '<div class="delta ' + deltaClass + '">' + deltaStr + '</div></div>';
+    }).join("");
+  }
+
+  function timeAgo(date){
+    const diffMs = Date.now() - date.getTime();
+    const mins = Math.round(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return mins + "m ago";
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + "h ago";
+    return Math.round(hrs / 24) + "d ago";
+  }
+
+  function renderCards(items, color){
+    const feed = document.getElementById("feed");
+    if (!items.length){
+      feed.innerHTML =
+        '<div class="empty">No stories loaded for this tab right now — either every source here is having a bad day, ' +
+        'or something upstream (a CORS policy, a rate limit) is blocking the request. That is a source problem, not ' +
+        'something to fix by reloading five times.<div class="links">' +
+        '<a href="https://news.ycombinator.com" target="_blank" rel="noopener">Open Hacker News</a>' +
+        '<a href="https://reddit.com" target="_blank" rel="noopener">Open Reddit</a>' +
+        '<a href="https://bbc.com/news" target="_blank" rel="noopener">Open BBC News</a>' +
+        '</div></div>';
+      return;
+    }
+    feed.innerHTML = items.map(it => {
+      const safeTitle = it.title.replace(/</g, "&lt;");
+      const safeSnippet = (it.snippet || "").replace(/</g, "&lt;");
+      return '<div class="card" style="border-left-color:' + color + '">' +
+        '<div class="meta"><span>' + it.source + '</span><span>' + timeAgo(it.time) + '</span></div>' +
+        '<h3><a href="' + it.url + '" target="_blank" rel="noopener">' + safeTitle + '</a></h3>' +
+        (safeSnippet ? '<p class="snippet">' + safeSnippet + '</p>' : '') +
+        '</div>';
+    }).join("");
+  }
+
+  // ---------- Orchestration ----------
+  async function loadCategory(key, force){
+    const cat = CATEGORIES[key];
+    const now = Date.now();
+    if (!force && cache[key] && (now - cache[key].ts) < CACHE_TTL_MS){
+      renderTickers(cache[key].tickers || []);
+      renderCards(cache[key].items, cat.color);
+      return;
+    }
+
+    document.getElementById("feed").innerHTML =
+      '<div class="empty">Pulling ' + cat.label.toLowerCase() + '…</div>';
+
+    const jobs = cat.sources.map(s => {
+      if (s.type === "reddit") return fetchReddit(s.sub, s.name);
+      if (s.type === "reddit_search") return fetchRedditSearch(s.sub, s.query, s.name);
+      if (s.type === "hn") return fetchHN(s.query, s.name);
+      if (s.type === "hn_front") return fetchHNFront(s.name);
+      if (s.type === "rss") return fetchRSS(s.url, s.name);
+      return Promise.resolve([]);
+    });
+
+    const tickerJob = cat.tickers ? fetchTickers(cat.tickers) : Promise.resolve([]);
+
+    const [results, tickers] = await Promise.all([Promise.all(jobs), tickerJob]);
+    let items = [].concat(...results);
+    // de-dup by url, sort newest first
+    const seen = new Set();
+    items = items.filter(it => {
+      if (seen.has(it.url)) return false;
+      seen.add(it.url); return true;
+    }).sort((a, b) => b.time - a.time);
+
+    cache[key] = { items, tickers, ts: Date.now() };
+    if (key === activeCategory){
+      renderTickers(tickers);
+      renderCards(items, cat.color);
+      document.getElementById("updatedAt").textContent = "updated " + new Date().toLocaleTimeString();
+    }
+  }
+
+  function switchCategory(key){
+    activeCategory = key;
+    saveState();
+    renderTabs();
+    renderStatus();
+    loadCategory(key, false);
+  }
+
+  function setupAutoRefresh(){
+    const box = document.getElementById("autoRefresh");
+    box.addEventListener("change", () => {
+      if (box.checked){
+        autoTimer = setInterval(() => loadCategory(activeCategory, true), 10 * 60 * 1000);
+      } else if (autoTimer){
+        clearInterval(autoTimer); autoTimer = null;
+      }
+    });
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    await loadCategory(activeCategory, true);
+    e.target.disabled = false;
+  });
+
+  // ---------- Greeting: different heading each visit, matched to time of day ----------
+  const GREETINGS = {
+    night:     ["Still up, Hari?", "Burning the midnight oil, Hari", "Night shift, Hari"],
+    morning:   ["Good morning, Hari", "Morning, Hari", "Rise and shine, Hari"],
+    afternoon: ["Good afternoon, Hari", "Afternoon, Hari"],
+    evening:   ["Good evening, Hari", "Evening, Hari"]
+  };
+  function renderGreeting(){
+    const h = new Date().getHours();
+    let bucket = "night";
+    if (h >= 5 && h < 12) bucket = "morning";
+    else if (h >= 12 && h < 17) bucket = "afternoon";
+    else if (h >= 17 && h < 21) bucket = "evening";
+    const options = GREETINGS[bucket];
+    const text = options[Math.floor(Math.random() * options.length)];
+    document.getElementById("greeting").textContent = text;
+  }
+
+  // ---------- Pull to refresh (touch only, mirrors the Refresh button) ----------
+  function setupPullToRefresh(){
+    const indicator = document.getElementById("pullIndicator");
+    const PULL_THRESHOLD = 70;
+    const PULL_MAX = 110;
+    let startY = 0;
+    let dragging = false;
+    let currentDelta = 0;
+    let refreshing = false;
+
+    document.addEventListener("touchstart", (e) => {
+      if (window.scrollY === 0 && !refreshing){
+        startY = e.touches[0].clientY;
+        dragging = true;
+      } else {
+        dragging = false;
+      }
+    }, { passive: true });
+
+    document.addEventListener("touchmove", (e) => {
+      if (!dragging || refreshing) return;
+      const delta = e.touches[0].clientY - startY;
+      if (delta <= 0){ currentDelta = 0; return; }
+      currentDelta = Math.min(delta, PULL_MAX);
+      // Only hijack the scroll once it's clearly a downward pull, so normal taps/scrolls are untouched.
+      if (delta > 8 && window.scrollY === 0) e.preventDefault();
+      indicator.style.opacity = String(Math.min(currentDelta / PULL_THRESHOLD, 1));
+      indicator.style.transform = "translateY(" + (currentDelta - 60) + "px)";
+      indicator.textContent = currentDelta >= PULL_THRESHOLD ? "Release to refresh" : "Pull to refresh";
+    }, { passive: false });
+
+    document.addEventListener("touchend", async () => {
+      if (!dragging) return;
+      dragging = false;
+      if (currentDelta >= PULL_THRESHOLD && !refreshing){
+        refreshing = true;
+        indicator.textContent = "Refreshing…";
+        indicator.style.opacity = "1";
+        indicator.style.transform = "translateY(0)";
+        await loadCategory(activeCategory, true);
+        refreshing = false;
+      }
+      indicator.style.opacity = "0";
+      indicator.style.transform = "translateY(-100%)";
+      currentDelta = 0;
+    }, { passive: true });
+  }
+
+  // ---------- Connectivity diagnostics: which specific piece is actually broken? ----------
+  // Isolates three independent things instead of one vague "network check":
+  //   1. Can this browser reach the open internet at all (a maximally permissive API)?
+  //   2. Does Reddit's own endpoint answer a direct cross-origin request?
+  //   3. Does each configured CORS proxy actually work right now, individually?
+  // That turns "everything is red" into a specific, actionable answer instead of a guess.
+  const DIAG_TESTS = [
+    { key: "internet", label: "General internet (api.github.com)",
+      url: "https://api.github.com/zen" },
+    { key: "reddit", label: "Reddit direct (no proxy)",
+      url: "https://www.reddit.com/r/test/.json?limit=1" },
+    ...PROXY_CONFIGS.map((p, i) => ({
+      key: "proxy" + i,
+      label: "Proxy " + (i + 1) + " · " + p.label,
+      url: p.build("https://api.github.com/zen")
+    }))
+  ];
+
+  async function runDiagnostics(){
+    const panel = document.getElementById("diagPanel");
+    panel.style.display = "block";
+    panel.innerHTML = '<div class="diag-title">Connectivity check — which piece is actually broken</div>' +
+      DIAG_TESTS.map(t =>
+        '<div class="diag-row" data-key="' + t.key + '"><span class="dot pending"></span><span>' + t.label + '</span></div>'
+      ).join("");
+
+    const results = await Promise.all(DIAG_TESTS.map(async (t) => {
+      try{
+        const res = await fetchWithTimeout(t.url, 8000);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        await res.text();
+        return { key: t.key, ok: true };
+      }catch(e){
+        return { key: t.key, ok: false, detail: describeError(e) };
+      }
+    }));
+
+    results.forEach(r => {
+      const row = panel.querySelector('[data-key="' + r.key + '"]');
+      const dot = row.querySelector(".dot");
+      dot.className = "dot " + (r.ok ? "ok" : "fail");
+      if (!r.ok){
+        row.classList.add("fail");
+        row.title = r.detail;
+        const detailSpan = document.createElement("span");
+        detailSpan.style.cssText = "color:var(--text-dim);font-size:0.72rem;";
+        detailSpan.textContent = "— " + r.detail;
+        row.appendChild(detailSpan);
+      }
+    });
+
+    // Everything passed — this panel has nothing useful left to say, so get out of the way.
+    if (results.every(r => r.ok)) panel.style.display = "none";
+  }
+
+  // ---------- PWA: installable via manifest, no fake offline support ----------
+  // A manifest can be attached from a Blob URL and Chrome/Android will honor it — that's what
+  // makes "Add to Home Screen" install a standalone app with its own icon instead of a bookmark.
+  // A service worker is a different story: browsers refuse to register one from a blob: URL
+  // (it has to be a real same-origin .js file), so a single HTML file cannot honestly ship one.
+  // That means this installs as a real app, but does NOT work offline or cache old headlines —
+  // it still needs the network every time it opens, same as now. None of this works over a
+  // file:// path or inside an embedded preview either — it needs to be served over https,
+  // e.g. GitHub Pages, exactly like the hosting step that tripped up the 2048 install earlier.
+  function setupManifest(){
+    const icon = "data:image/svg+xml," + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+      '<rect width="512" height="512" rx="96" fill="#12151b"/>' +
+      '<text x="256" y="336" font-family="Georgia, \'Times New Roman\', serif" font-size="300" ' +
+      'font-weight="700" fill="#e3b23c" text-anchor="middle">D</text></svg>'
+    );
+    const manifest = {
+      name: "Dispatch",
+      short_name: "Dispatch",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#12151b",
+      theme_color: "#12151b",
+      icons: [
+        { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "any" },
+        { src: icon, sizes: "512x512", type: "image/svg+xml", purpose: "maskable" }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+    document.getElementById("manifestLink").href = URL.createObjectURL(blob);
+  }
+
+  // ---------- Init ----------
+  loadState();
+  renderGreeting();
+  renderTabs();
+  renderStatus();
+  setupAutoRefresh();
+  setupPullToRefresh();
+  setupManifest();
+  runDiagnostics();
+  loadCategory(activeCategory, false);
+
+})();
+</script>
+</body>
+</html>
