@@ -251,7 +251,7 @@
   // Public proxies alone were confirmed dead on 2026-09-06 (corsproxy.io now returns 401 —
   // it started requiring auth; allorigins.win and codetabs.com both timed out). They're kept
   // below as a last-ditch fallback in case they come back, but don't rely on them.
-  const OWN_PROXY_URL = "https://newsapp-fawn-psi.vercel.app/api/proxy"; // e.g. "https://dispatch-proxy.vercel.app/api/proxy"
+  const OWN_PROXY_URL = ""; // e.g. "https://dispatch-proxy.vercel.app/api/proxy"
   const PROXY_CONFIGS = [
     ...(OWN_PROXY_URL ? [{
       label: "your proxy",
@@ -445,7 +445,7 @@
       const target = "https://www.reddit.com/r/" + sub + "/.json?limit=8";
       // Confirmed 2026-09-06: Reddit's .json endpoint does not answer direct cross-origin
       // requests. Going straight to the proxy chain instead of wasting a guaranteed-fail attempt.
-      const res = await fetchDirectOrProxied(target, 8000, false);
+      const res = await fetchDirectOrProxied(target, 14000, false);
       const data = await res.json();
       setStatus(name, "ok");
       return (data.data.children || []).map(c => ({
@@ -466,7 +466,7 @@
     try{
       const target = "https://www.reddit.com/r/" + sub + "/search.json?q=" +
         encodeURIComponent(query) + "&restrict_sr=1&sort=new&limit=8";
-      const res = await fetchDirectOrProxied(target, 8000, false);
+      const res = await fetchDirectOrProxied(target, 14000, false);
       const data = await res.json();
       setStatus(name, "ok");
       return (data.data.children || []).map(c => ({
@@ -485,7 +485,7 @@
   async function fetchRSS(feedUrl, name){
     setStatus(name, "pending");
     try{
-      const res = await fetchDirectOrProxied(feedUrl, 9000, false); // these feeds never allow direct
+      const res = await fetchDirectOrProxied(feedUrl, 14000, false); // these feeds never allow direct
       const text = await res.text();
       const xml = new DOMParser().parseFromString(text, "text/xml");
       if (xml.querySelector("parsererror")) throw new Error("feed returned invalid XML");
@@ -511,7 +511,7 @@
     try{
       const symbols = tickers.map(t => t.symbol).join(",");
       const stooqUrl = "https://stooq.com/q/l/?s=" + encodeURIComponent(symbols) + "&f=sd2t2ohlcv&h&e=csv";
-      const res = await fetchDirectOrProxied(stooqUrl, 9000, false);
+      const res = await fetchDirectOrProxied(stooqUrl, 14000, false);
       const text = await res.text();
       const lines = text.trim().split("\n").slice(1); // drop header row
       setStatus(name, "ok");
@@ -802,7 +802,7 @@
 
     const results = await Promise.all(DIAG_TESTS.map(async (t) => {
       try{
-        const res = await fetchWithTimeout(t.url, 8000);
+        const res = await fetchWithTimeout(t.url, 12000);
         if (!res.ok) throw new Error("HTTP " + res.status);
         await res.text();
         return { key: t.key, ok: true };
